@@ -164,7 +164,7 @@ try:
 
             
                 # Reviews
-                driver.execute_script("window.scrollTo(0, window.scrollY + window.innerHeight * 0.5);")
+                driver.execute_script("window.scrollTo(0, window.scrollY + window.innerHeight * 3);")
                 time.sleep(3)  # Wait for the page to load after scrolling
                 try:
                     stars_2_element =  driver.find_element(By.XPATH, '//div[@class="filter-review__item  "][@data-view-index="6"]')
@@ -174,6 +174,25 @@ try:
                         stars_2_element.click()
                         stars_1_element.click()
                         time.sleep(3)
+                        try:
+                            comments_list = driver.find_elements(By.CLASS_NAME, 'review-comment')
+                            time.sleep(5)
+                            for comment in comments_list:
+                                try:
+                                    show_more_element = comment.find_element(By.CSS_SELECTOR, 'span.show-more-content') 
+                                    if show_more_element:
+                                        show_more_element.click()
+                                        content_element = comment.find_element(By.XPATH, './/div[@class="review-comment__content"]//div//span[not(@class)]')
+                                        content = content_element.text
+                                        print(content)
+                                       
+                                except NoSuchElementException:
+                                    content_element = comment.find_element(By.XPATH, './/div[@class="review-comment__content"]')
+                                    content = content_element.text
+                                    print(content)
+                        except NoSuchElementException:
+                            print("No comments")
+
 
                 except NoSuchElementException:
                     print("Divs not found")
@@ -181,7 +200,6 @@ try:
             finally:
                 driver.close()
                 driver.switch_to.window(driver.window_handles[0])
-            time.sleep(10)
         driver.switch_to.window(driver.window_handles[0])
 
 finally:
