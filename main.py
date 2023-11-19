@@ -34,24 +34,26 @@ try:
         ban_chay_element.click()
         time.sleep(3)
 
-        container = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, '[data-view-id="product_list_container"]'))
-        )
-        
-        links_in_container = container.find_elements(By.CSS_SELECTOR, 'a.style__ProductLink-sc-7xd6qw-2')
+        products_list = driver.find_elements(By.CSS_SELECTOR, 'a.style__ProductLink-sc-7xd6qw-2')
 
-        for index, link_element in enumerate(links_in_container[:1]):  
+        links_in_container = []
+
+        for product in products_list:
+            try:
+                element = product.find_element(By.XPATH, ".//p[contains(text(), 'Tài trợ')]")
+            except NoSuchElementException:
+                links_in_container.append(product)
+
+        for index, link_element in enumerate(links_in_container[:10]):  
             link_href = link_element.get_attribute("href")
             driver.execute_script("window.open('{}', '_blank');".format(link_href))
             driver.switch_to.window(driver.window_handles[-1])
-
-            # Filter tài trợ
-            # TODO
 
             try:
                 name_element = driver.find_element(By.CLASS_NAME, "Title__TitledStyled-sc-1kxsq5b-0")
                 name = name_element.text
                 print(f"Index {index} Name: {name}")
+
 
                 brand_element = driver.find_element(By.CSS_SELECTOR, 'a[data-view-id="pdp_details_view_brand"]')
                 brand_name = brand_element.text
@@ -179,7 +181,7 @@ try:
             finally:
                 driver.close()
                 driver.switch_to.window(driver.window_handles[0])
-
+            time.sleep(10)
         driver.switch_to.window(driver.window_handles[0])
 
 finally:
