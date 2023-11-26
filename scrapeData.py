@@ -21,7 +21,8 @@ WebDriverWait(driver, 10).until(
 time.sleep(3)
 
 # Select danh mục
-contents = ["Trang trí nhà cửa", "Đồ dùng phòng ngủ", "Ngoài trời & sân vườn", "Nội thất"]
+#  "Dụng cụ nhà bếp", "Trang trí nhà cửa", "Đồ dùng phòng ngủ", "Ngoài trời & sân vườn", "Nội thất"
+contents = ["Đồ dùng phòng ngủ"]
 
 for content in contents:
     count = 1
@@ -109,10 +110,17 @@ for content in contents:
                 driver.execute_script("window.scrollTo(0, window.scrollY + window.innerHeight * 3);")
                 time.sleep(3)  # Wait for the page to load after scrolling
                 # Find the main div with class 'review-rating__detail'
-                main_div = driver.find_element(By.CLASS_NAME, 'review-rating__detail')
+                try:
 
-                # Find all child divs with class 'review-rating__number'
-                child_divs = main_div.find_elements(By.CLASS_NAME, 'review-rating__number')
+                    main_div = driver.find_element(By.CLASS_NAME, 'review-rating__detail')
+                    # Find all child divs with class 'review-rating__number'
+                    child_divs = main_div.find_elements(By.CLASS_NAME, 'review-rating__number')
+                except NoSuchElementException:
+                    driver.execute_script("window.scrollTo(0, window.scrollY + window.innerHeight * 3);")
+                    main_div = driver.find_element(By.CLASS_NAME, 'review-rating__detail')
+
+                    # Find all child divs with class 'review-rating__number'
+                    child_divs = main_div.find_elements(By.CLASS_NAME, 'review-rating__number')
 
                 # Extract content from each child div
                 i = 5
@@ -145,7 +153,7 @@ for content in contents:
         print("No more ", content)
     
     df = pd.DataFrame(data)
-    df.to_csv("trangtrinhacua.csv", index=False)
+    df.to_csv("dodungphongngu.csv", index=False)
     driver.switch_to.window(driver.window_handles[0])
 
 driver.quit()
