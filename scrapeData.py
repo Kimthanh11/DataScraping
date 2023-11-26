@@ -22,7 +22,7 @@ time.sleep(3)
 
 # Select danh mục
 #  "Dụng cụ nhà bếp", "Trang trí nhà cửa", "Đồ dùng phòng ngủ", "Ngoài trời & sân vườn", "Nội thất"
-contents = ["Đồ dùng phòng ngủ"]
+contents = ["Nội thất"]
 
 for content in contents:
     count = 1
@@ -153,7 +153,7 @@ for content in contents:
         print("No more ", content)
     
     df = pd.DataFrame(data)
-    df.to_csv("dodungphongngu.csv", index=False)
+    df.to_csv("noithat.csv", index=False)
     driver.switch_to.window(driver.window_handles[0])
 
 driver.quit()
