@@ -21,8 +21,7 @@ WebDriverWait(driver, 10).until(
 time.sleep(3)
 
 # Select danh mục
-#  "Dụng cụ nhà bếp", "Trang trí nhà cửa", "Đồ dùng phòng ngủ", "Ngoài trời & sân vườn", "Nội thất"
-contents = ["Nội thất"]
+contents = ["Dụng cụ nhà bếp", "Trang trí nhà cửa", "Đồ dùng phòng ngủ", "Ngoài trời & sân vườn", "Nội thất"]
 
 for content in contents:
     count = 1
@@ -150,15 +149,12 @@ for content in contents:
         time.sleep(3)
         arrow_right_image = driver.find_element(By.XPATH, '//img[contains(@alt, "arrow-right")]')
         arrow_right_image.click()
-        print("No more ", content)
-    
-    df = pd.DataFrame(data)
-    df.to_csv("noithat.csv", index=False)
+        
     driver.switch_to.window(driver.window_handles[0])
 
 driver.quit()
 
-# df = pd.DataFrame(data)
-# df.to_csv('tiki1.csv', index=False)  
+df = pd.DataFrame(data)
+df.to_csv('tiki1.csv', index=False)  
 
-# print(df)  # Display the DataFrame
+print(df)  # Display the DataFrame
