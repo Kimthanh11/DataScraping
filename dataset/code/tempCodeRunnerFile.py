@@ -1,0 +1,1 @@
+df.to_csv('tiki1.csv', index=False)  
