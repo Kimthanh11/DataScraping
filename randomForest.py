@@ -1,260 +1,164 @@
 import numpy as np
 from collections import Counter
+import random
 
 class Node:
-    # Class which implements a single tree node
-    def __init__(self, feature, threshold, data_left, data_right, gain, value) -> None:
+    def __init__(self, feature=None, threshold=None, left=None, right=None,*,value=None):
         self.feature = feature
         self.threshold = threshold
-        self.data_left = data_left
-        self.data_right = data_right
-        self.gain = gain
+        self.left = left
+        self.right = right
         self.value = value
+        
+    def is_leaf_node(self):
+        return self.value is not None
+
 
 class DecisionTree:
-    '''
-    Class which implements a decision tree classifier algorithm.
-    '''
-    def __init__(self, min_samples_split=2, max_depth=5):
-        self.min_samples_split = min_samples_split
-        self.max_depth = max_depth
-        self.root = None
-        
-    @staticmethod
-    def _entropy(s):
-        '''
-        Helper function, calculates entropy from an array of integer values.
-        
-        :param s: list
-        :return: float, entropy value
-        '''
-        # Convert to integers to avoid runtime errors
-        counts = np.bincount(np.array(s, dtype=np.int64))
-        # Probabilities of each class label
-        percentages = counts / len(s)
+    def __init__(self, min_samples_split=2, max_depth=20, n_features=None):
+        self.min_samples_split=min_samples_split
+        self.max_depth=max_depth
+        self.n_features=n_features
+        self.root=None
 
-        # Caclulate entropy
-        entropy = 0
-        for pct in percentages:
-            if pct > 0:
-                entropy += pct * np.log2(pct)
-        return -entropy
-    
-    def _information_gain(self, parent, left_child, right_child):
-        '''
-        Helper function, calculates information gain from a parent and two child nodes.
-        
-        :param parent: list, the parent node
-        :param left_child: list, left child of a parent
-        :param right_child: list, right child of a parent
-        :return: float, information gain
-        '''
-        num_left = len(left_child) / len(parent)
-        num_right = len(right_child) / len(parent)
-        
-        # One-liner which implements the previously discussed formula
-        return self._entropy(parent) - (num_left * self._entropy(left_child) + num_right * self._entropy(right_child))
-    
-    def _best_split(self, X, y):
-        '''
-        Helper function, calculates the best split for given features and target
-        
-        :param X: np.array, features
-        :param y: np.array or list, target
-        :return: dict
-        '''
-        best_split = {}
-        best_info_gain = -1
-        n_rows, n_cols = X.shape
-        
-        # For every dataset feature
-        for f_idx in range(n_cols):
-            X_curr = X[:, f_idx]
-            # For every unique value of that feature
-            for threshold in np.unique(X_curr):
-                # Construct a dataset and split it to the left and right parts
-                # Left part includes records lower or equal to the threshold
-                # Right part includes records higher than the threshold
-                df = np.concatenate((X, y.reshape(1, -1).T), axis=1)
-                df_left = np.array([row for row in df if row[f_idx] <= threshold])
-                df_right = np.array([row for row in df if row[f_idx] > threshold])
-
-                # Do the calculation only if there's data in both subsets
-                if len(df_left) > 0 and len(df_right) > 0:
-                    # Obtain the value of the target variable for subsets
-                    y = df[:, -1]
-                    y_left = df_left[:, -1]
-                    y_right = df_right[:, -1]
-
-                    # Caclulate the information gain and save the split parameters
-                    # if the current split if better then the previous best
-                    gain = self._information_gain(y, y_left, y_right)
-                    if gain > best_info_gain:
-                        best_split = {
-                            'feature_index': f_idx,
-                            'threshold': threshold,
-                            'df_left': df_left,
-                            'df_right': df_right,
-                            'gain': gain
-                        }
-                        best_info_gain = gain
-        return best_split
-    
-    def _build(self, X, y, depth=0):
-        '''
-        Helper recursive function, used to build a decision tree from the input data.
-        
-        :param X: np.array, features
-        :param y: np.array or list, target
-        :param depth: current depth of a tree, used as a stopping criteria
-        :return: Node
-        '''
-        n_rows, n_cols = X.shape
-        
-        # Check to see if a node should be leaf node
-        if n_rows >= self.min_samples_split and depth <= self.max_depth:
-            # Get the best split
-            best = self._best_split(X, y)
-            # If the split isn't pure
-            if best['gain'] > 0:
-                # Build a tree on the left
-                left = self._build(
-                    X=best['df_left'][:, :-1], 
-                    y=best['df_left'][:, -1], 
-                    depth=depth + 1
-                )
-                right = self._build(
-                    X=best['df_right'][:, :-1], 
-                    y=best['df_right'][:, -1], 
-                    depth=depth + 1
-                )
-                return Node(
-                    feature=best['feature_index'], 
-                    threshold=best['threshold'], 
-                    data_left=left, 
-                    data_right=right, 
-                    gain=best['gain']
-                )
-        # Leaf node - value is the most common target value 
-        return Node(
-            value=Counter(y).most_common(1)[0][0]
-        )
-    
     def fit(self, X, y):
-        '''
-        Function used to train a decision tree classifier model.
+        self.n_features = X.shape[1] if not self.n_features else min(X.shape[1],self.n_features)
+        self.root = self._grow_tree(X, y)
+
+    def _grow_tree(self, X, y, depth=0):
+        n_samples, n_feats = X.shape
+        n_labels = len(np.unique(y))
+
+        # check the stopping criteria
+        if (depth>=self.max_depth or n_labels==1 or n_samples<self.min_samples_split):
+            leaf_value = self._most_common_label(y)
+            return Node(value=leaf_value)
+
+        feat_idxs = np.random.choice(n_feats, self.n_features, replace=False)
+
+        # find the best split
+        best_feature, best_thresh = self._best_split(X, y, feat_idxs)
+
+        # create child nodes
+        left_idxs, right_idxs = self._split(X[:, best_feature], best_thresh)
+        left = self._grow_tree(X[left_idxs, :], y[left_idxs], depth+1)
+        right = self._grow_tree(X[right_idxs, :], y[right_idxs], depth+1)
+        return Node(best_feature, best_thresh, left, right)
+
+
+    def _best_split(self, X, y, feat_idxs):
+        best_gain = -1
+        split_idx, split_threshold = None, None
+
+        for feat_idx in feat_idxs:
+            X_column = X[:, feat_idx]
+            thresholds = np.unique(X_column)
+
+            for thr in thresholds:
+                # calculate the information gain
+                gain = self._information_gain(y, X_column, thr)
+
+                if gain > best_gain:
+                    best_gain = gain
+                    split_idx = feat_idx
+                    split_threshold = thr
+
+        return split_idx, split_threshold
+
+
+    def _information_gain(self, y, X_column, threshold):
+        # parent entropy
+        parent_entropy = self._entropy(y)
+
+        # create children
+        left_idxs, right_idxs = self._split(X_column, threshold)
+
+        if len(left_idxs) == 0 or len(right_idxs) == 0:
+            return 0
         
-        :param X: np.array, features
-        :param y: np.array or list, target
-        :return: None
-        '''
-        # Call a recursive function to build the tree
-        self.root = self._build(X, y)
-        
-    def _predict(self, x, tree):
-        '''
-        Helper recursive function, used to predict a single instance (tree traversal).
-        
-        :param x: single observation
-        :param tree: built tree
-        :return: float, predicted class
-        '''
-        # Leaf node
-        if tree.value != None:
-            return tree.value
-        feature_value = x[tree.feature]
-        
-        # Go to the left
-        if feature_value <= tree.threshold:
-            return self._predict(x=x, tree=tree.data_left)
-        
-        # Go to the right
-        if feature_value > tree.threshold:
-            return self._predict(x=x, tree=tree.data_right)
-        
+        # calculate the weighted avg. entropy of children
+        n = len(y)
+        n_l, n_r = len(left_idxs), len(right_idxs)
+        e_l, e_r = self._entropy(y[left_idxs]), self._entropy(y[right_idxs])
+        child_entropy = (n_l/n) * e_l + (n_r/n) * e_r
+
+        # calculate the IG
+        information_gain = parent_entropy - child_entropy
+        return information_gain
+
+    def _split(self, X_column, split_thresh):
+        left_idxs = np.argwhere(X_column <= split_thresh).flatten()
+        right_idxs = np.argwhere(X_column > split_thresh).flatten()
+        return left_idxs, right_idxs
+
+    def _entropy(self, y):
+        hist = np.bincount(y)
+        ps = hist / len(y)
+        return -np.sum([p * np.log(p) for p in ps if p>0])
+
+
+    def _most_common_label(self, y):
+        if not y.any():  # Checking if any elements are present in the array
+            return None  # Or handle it as required
+        counter = Counter(y)
+        if not counter:
+            return None  # Or handle it as required
+        value = counter.most_common(1)[0][0]
+        return value
+
     def predict(self, X):
-        '''
-        Function used to classify new instances.
+        return np.array([self._traverse_tree(x, self.root) for x in X])
+
+    def _traverse_tree(self, x, node):
+        if node.is_leaf_node():
+            return node.value
+
+        if node.threshold is not None and x[node.feature] <= node.threshold:
+            return self._traverse_tree(x, node.left)
+        elif node.threshold is not None:  # Ensure node.threshold exists before comparison
+            return self._traverse_tree(x, node.right)
+        else:
+            # Handle cases where node.threshold is None (could be a leaf or a node without a threshold)
+            return None  # Or handle it as required
         
-        :param X: np.array, features
-        :return: np.array, predicted classes
-        '''
-        # Call the _predict() function for every observation
-        return [self._predict(x, self.root) for x in X]  
 
 class RandomForest:
-    '''
-    A class that implements Random Forest algorithm from scratch.
-    '''
-    def __init__(self, num_trees=25, min_samples_split=2, max_depth=5):
-        self.num_trees = num_trees
-        self.min_samples_split = min_samples_split
-        self.max_depth = max_depth
-        # Will store individually trained decision trees
-        self.decision_trees = []
-        
-    @staticmethod
-    def _sample(X, y):
-        '''
-        Helper function used for boostrap sampling.
-        
-        :param X: np.array, features
-        :param y: np.array, target
-        :return: tuple (sample of features, sample of target)
-        '''
-        n_rows, n_cols = X.shape
-        # Sample with replacement
-        samples = np.random.choice(a=n_rows, size=n_rows, replace=True)
-        return X[samples], y[samples]
-        
+    def __init__(self, n_trees=10, max_depth=100, min_samples_split=2, n_feature=None):
+        self.n_trees = n_trees
+        self.max_depth=max_depth
+        self.min_samples_split=min_samples_split
+        self.n_features=n_feature
+        self.trees = []
+
     def fit(self, X, y):
-        '''
-        Trains a Random Forest classifier.
+        self.trees = []
+        for index in range(self.n_trees):
+            tree = DecisionTree(
+                max_depth=self.max_depth,
+                min_samples_split=self.min_samples_split,
+                n_features=self.n_features
+            )
+            X_sample, y_sample = self._bootstrap_samples(X, y)
+            tree.fit(X_sample, y_sample)
+            self.trees.append(tree)
+            print(f"Tree {index} created.")
+
+    def _bootstrap_samples(self, X, y):
+        n_samples = X.shape[0]
+        idxs = np.random.choice(n_samples, n_samples, replace=True)
+        return X[idxs], y[idxs]
+
+    def _most_common_label(self, y):
+        if not y.any():  # Checking if any elements are present in the array
+            return None  # Or handle it as required
+        counter = Counter(y)
+        if not counter:
+            return None  # Or handle it as required
+        value = counter.most_common(1)[0][0]
+        return value
         
-        :param X: np.array, features
-        :param y: np.array, target
-        :return: None
-        '''
-        # Reset
-        if len(self.decision_trees) > 0:
-            self.decision_trees = []
-            
-        # Build each tree of the forest
-        num_built = 0
-        while num_built < self.num_trees:
-            try:
-                clf = DecisionTree(
-                    min_samples_split=self.min_samples_split,
-                    max_depth=self.max_depth
-                )
-                # Obtain data sample
-                _X, _y = self._sample(X, y)
-                # Train
-                clf.fit(_X, _y)
-                # Save the classifier
-                self.decision_trees.append(clf)
-                num_built += 1
-            except Exception as e:
-                continue
-    
     def predict(self, X):
-        '''
-        Predicts class labels for new data instances.
-        
-        :param X: np.array, new instances to predict
-        :return: 
-        '''
-        # Make predictions with every tree in the forest
-        y = []
-        for tree in self.decision_trees:
-            y.append(tree.predict(X))
-        
-        # Reshape so we can find the most common value
-        y = np.swapaxes(a=y, axis1=0, axis2=1)
-        
-        # Use majority voting for the final prediction
-        predictions = []
-        for preds in y:
-            counter = Counter(x)
-            predictions.append(counter.most_common(1)[0][0])
+        predictions = np.array([tree.predict(X) for tree in self.trees])
+        tree_preds = np.swapaxes(predictions, 0, 1)
+        predictions = np.array([self._most_common_label(pred) for pred in tree_preds])
         return predictions
