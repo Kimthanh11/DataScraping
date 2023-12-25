@@ -36,10 +36,17 @@ for col in columns_with_missing:
     # Calculate the mean per week and fill missing values with the weekly mean
     merged_data[col] = merged_data.groupby('week_number')[col].transform(lambda x: x.fillna(x.mean().round(2)))
 
+# Rearrange columns
+column_order = ['date', 'vcb_close', 'vnindex_close', 'exchange_rate', 'interest_rate', 'gdp', 'inflation', 'sp500_close']
+merged_data = merged_data[column_order]
+
+
 # Count the number of empty values in each column
 empty_count = merged_data.isna().sum()
 
 print(empty_count)
+
+
 
 # To save the merged data to a CSV file
 merged_file_path = 'final/main_data.csv'
