@@ -43,31 +43,44 @@ td_elements = table.find_elements(By.XPATH, "//tr[1]//td[contains(@class, 'text-
 td_text = [td.text.strip() for td in td_elements]
 
 # Create a DataFrame for inflation data
-inflation_data = {'month': th_text, 'inflation': td_text}
-inflation_df = pd.DataFrame(inflation_data)
+inflation_dt= {'month': th_text, 'inflation': td_text}
+# Reformat data into list of dictionaries
+inflation_data = [
+    {'month': month, 'inflation': inflation}
+    for month, inflation in zip(inflation_dt['month'], inflation_dt['inflation'])
+]
+print(inflation_data)
 
-# Define date range
+# Define the date range from 26/12/2022 to 25/12/2023
 start_date = datetime.strptime("26/12/2022", "%d/%m/%Y")
 end_date = datetime.strptime("25/12/2023", "%d/%m/%Y")
 date_range = [start_date + timedelta(days=x) for x in range((end_date - start_date).days + 1)]
+
 # Filter out Saturdays and Sundays from the date range
 date_range = [date for date in date_range if date.weekday() not in [5, 6]]  # 5: Saturday, 6: Sunday
 
-# Fetch inflation for each date in the range
-data = []
-for date in date_range:
-    # Find the corresponding inflation for the month
-    month = date.strftime("%m/%Y")
-    matching_month = inflation_df[inflation_df['month'] == month]
-    if not matching_month.empty:
-        inflation = float(matching_month['inflation'].values[0])
-    else:
-        inflation = None
-    data.append({"date": date.strftime("%d/%m/%Y"), "inflation": inflation})
+# Create a DataFrame structure for the filtered date range
+inflation_df = pd.DataFrame({"date": date_range})
+print(inflation_df)
 
-# Create DataFrame
-df = pd.DataFrame(data)
-print(df) 
-df.to_csv('final/dataset/inflation.csv', index=False)
+def get_month_year(date):
+    month_year = date.strftime("%m/%Y")
+    return month_year.lstrip("0").replace("/0", "/")
+
+# Apply the function to the Date column to get the corresponding month and year
+inflation_df["month"] = inflation_df["date"].apply(get_month_year)
+
+# Merge the DataFrame with inflation data
+merged_inflation_df = pd.merge(inflation_df, pd.DataFrame(inflation_data), on="month", how="left").drop(columns=["month"])
+
+# Convert 'date' column to datetime type
+merged_inflation_df['date'] = pd.to_datetime(merged_inflation_df['date'], format='%Y-%m-%d')
+
+# Sort DataFrame by the 'date' column
+merged_inflation_df = merged_inflation_df.sort_values('date')
+
+# Save the DataFrame as needed
+print(merged_inflation_df)
+merged_inflation_df.to_csv('final/dataset/inflation.csv', index=False)
 
 driver.quit()

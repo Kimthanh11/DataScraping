@@ -48,7 +48,14 @@ td_text = [td.text.strip() for td in td_elements]
 
 # Create a DataFrame
 data = {'date': th_text, 'interest_rate': td_text}
+
 df = pd.DataFrame(data)
+
+# Convert 'date' column to datetime type
+df['date'] = pd.to_datetime(df['date'], format='%d/%m/%Y')
+
+# Sort DataFrame by the 'date' column
+df = df.sort_values('date')
 
 # Save DataFrame to CSV
 df.to_csv('final/dataset/interest_change.csv', index=False)
