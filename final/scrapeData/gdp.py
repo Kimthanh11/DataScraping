@@ -3,10 +3,10 @@ from datetime import datetime, timedelta
 
 # Provided GDP data
 gdp_data = [
-    {"time": "4/2022", "gdp": "2,669,131"},
-    {"time": "1/2023", "gdp": "2,300,882"},
-    {"time": "2/2023", "gdp": "2,444,649"},
-    {"time": "3/2023", "gdp": "2,540,588"},
+    {"time": "4/2022", "gdp": 2669131},
+    {"time": "1/2023", "gdp": 2300882},
+    {"time": "2/2023", "gdp": 2444649},
+    {"time": "3/2023", "gdp": 2540588},
     {"time": "4/2023", "gdp": None},
 ]
 

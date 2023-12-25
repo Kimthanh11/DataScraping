@@ -58,7 +58,7 @@ df['date'] = pd.to_datetime(df['date'], format='%d/%m/%Y')
 df = df.sort_values('date')
 
 # Save DataFrame to CSV
-df.to_csv('final/dataset/interest_change.csv', index=False)
+df.to_csv('final/dataset/interest_rate.csv', index=False)
 
 # Close the browser window
 driver.quit()

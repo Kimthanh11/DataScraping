@@ -40,7 +40,7 @@ th_text = [th.text.strip() for th in th_elements]
 
 # Get all td elements
 td_elements = table.find_elements( By.XPATH, "//tr[@class='group']/following-sibling::tr[1]//td[contains(@class, 'text-right')]")
-td_text = [td.text.strip() for td in td_elements]
+td_text = [float(td.text.strip().replace(',', '')) for td in td_elements]
 
 # Create a DataFrame
 data = {'date': th_text, 'exchange_rate': td_text}
