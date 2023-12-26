@@ -1,12 +1,14 @@
+# Import necessary libraries
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import Select
 import time
 import pandas as pd
-from selenium.webdriver.support.ui import Select
 from datetime import datetime, timedelta
 
+# Configure the Chrome driver
 options = webdriver.ChromeOptions()
 options.add_experimental_option('excludeSwitches', ['enable-logging']) 
 driver = webdriver.Chrome(options=options)
@@ -15,41 +17,35 @@ driver = webdriver.Chrome(options=options)
 url = "https://finance.vietstock.vn/du-lieu-vi-mo/52/cpi.htm"
 driver.get(url)
 
-# Locate the select element by name for month
+# Select month and year for the filter
 select_month_element = driver.find_element(By.NAME, "from")
 select_month = Select(select_month_element)
-select_month.select_by_value('12')
-time.sleep(3)
+select_month.select_by_value('12')  # December
 
-# Locate the select element by name for year
 select_year_element = driver.find_element(By.NAME, "fromYear")
 select_year = Select(select_year_element)
-select_year.select_by_value('2022')
-time.sleep(3)
+select_year.select_by_value('2022')  # 2022
 
-# Find and click the 'Xem' button to trigger the date filter
+# Trigger the filter by clicking the 'Xem' button
 xem_button = driver.find_element(By.XPATH, "//button[contains(text(), 'Xem')]")
 xem_button.click()
 
 # Wait for the table to load
 table = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "tbl-macro-data")))
 
-# Get all th elements (months)
+# Extracting inflation data from the table
 th_elements = table.find_elements(By.XPATH, "//th[contains(@class, 'text-right')]")
 th_text = [th.text.replace("Tháng", "").strip() for th in th_elements]
 
-# Get all td elements (inflation values)
 td_elements = table.find_elements(By.XPATH, "//tr[1]//td[contains(@class, 'text-right')]")
 td_text = [td.text.strip() for td in td_elements]
 
 # Create a DataFrame for inflation data
 inflation_dt= {'month': th_text, 'inflation': td_text}
-# Reformat data into list of dictionaries
 inflation_data = [
     {'month': month, 'inflation': inflation}
     for month, inflation in zip(inflation_dt['month'], inflation_dt['inflation'])
 ]
-print(inflation_data)
 
 # Define the date range from 26/12/2022 to 25/12/2023
 start_date = datetime.strptime("26/12/2022", "%d/%m/%Y")
@@ -61,8 +57,8 @@ date_range = [date for date in date_range if date.weekday() not in [5, 6]]  # 5:
 
 # Create a DataFrame structure for the filtered date range
 inflation_df = pd.DataFrame({"date": date_range})
-print(inflation_df)
 
+# Function to get month and year from date
 def get_month_year(date):
     month_year = date.strftime("%m/%Y")
     return month_year.lstrip("0").replace("/0", "/")
@@ -80,7 +76,7 @@ merged_inflation_df['date'] = pd.to_datetime(merged_inflation_df['date'], format
 merged_inflation_df = merged_inflation_df.sort_values('date')
 
 # Save the DataFrame as needed
-print(merged_inflation_df)
 merged_inflation_df.to_csv('final/dataset/inflation.csv', index=False)
 
+# Close the browser window
 driver.quit()

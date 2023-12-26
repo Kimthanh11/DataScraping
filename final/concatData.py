@@ -17,6 +17,7 @@ merged_data = merged_data.merge(gdp, on='date', how='outer')
 merged_data = merged_data.merge(inflation, on='date', how='outer')
 
 # Sort merged data by the 'date' column
+merged_data['date'] = pd.to_datetime(merged_data['date'])
 merged_data = merged_data.sort_values('date')
 
 # Filter out rows where 'vcb_close' is empty
@@ -24,9 +25,6 @@ merged_data = merged_data.dropna(subset=['vcb_close'])
 
 # Identify columns with missing values
 columns_with_missing = ['exchange_rate', 'interest_rate', 'sp500_close']
-
-# Convert 'date' column to datetime
-merged_data['date'] = pd.to_datetime(merged_data['date'])
 
 # Fill missing values with weekly means
 for col in columns_with_missing:
@@ -41,11 +39,9 @@ column_order = ['date', 'vcb_close', 'vnindex_close', 'exchange_rate', 'interest
 merged_data = merged_data[column_order]
 
 
-# Count the number of empty values in each column
-empty_count = merged_data.isna().sum()
-
-print(empty_count)
-
+# Calculate GDP growth and add it as a new column
+merged_data['gdp_growth'] = merged_data['gdp'].ffill()  # Forward fill missing values
+merged_data['gdp_growth'] = merged_data['gdp_growth'].diff() / merged_data['gdp_growth'].shift(1)  # Compute growth rate
 
 
 # To save the merged data to a CSV file
