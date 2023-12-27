@@ -43,6 +43,9 @@ merged_data = merged_data[column_order]
 merged_data['gdp_growth'] = merged_data['gdp'].ffill()  # Forward fill missing values
 merged_data['gdp_growth'] = merged_data['gdp_growth'].diff() / merged_data['gdp_growth'].shift(1)  # Compute growth rate
 
+# Convert vcb close
+merged_data['vcb_close'] = merged_data['vcb_close'] / 1000
+
 
 # To save the merged data to a CSV file
 merged_file_path = 'final/main_data.csv'
