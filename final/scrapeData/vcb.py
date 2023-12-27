@@ -1,25 +1,28 @@
 import pandas as pd
 
-# Define the path to the Excel file
-file_path = 'final/original_dataset/original_vcb.xlsx'
+# Path to the original CSV file
+file_path = 'final/original_dataset/original_vcb.csv'
 
-# Read the Excel file starting from row 7 and select columns 1 (Date) and 5 (Close)
-df = pd.read_excel(file_path, header=5, usecols="A,E")
+# Read the CSV file into a DataFrame
+data = pd.read_csv(file_path)
 
-# Rename columns for better readability (optional)
-df.columns = ['date', 'vcb_close']
+# Select specific columns ("Ngày" and "Lần cuối")
+df = data[["Ngày", "Lần cuối"]]
 
-# Convert 'date' column to datetime type with specified format
+# Rename the columns to "date" and "vcb_close"
+df = df.rename(columns={"Ngày": "date", "Lần cuối": "vcb_close"})
+
+# Convert 'date' column to datetime format, considering the specified format
 df['date'] = pd.to_datetime(df['date'], format='%d/%m/%Y', dayfirst=True)
+
+# Convert 'vcb_close' column to numeric after removing commas
+df['vcb_close'] = df['vcb_close'].replace(',', '', regex=True).astype(float)
 
 # Sort DataFrame by the 'date' column
 df = df.sort_values('date')
 
-# Transform 'vcb_close' column to thousands and format to 2 decimal places
-df['vcb_close'] = (df['vcb_close'] * 0.001).map('{:.2f}'.format)
-
-# Define the output file path for the CSV file
+# Define the path for the output CSV file
 output_file_path = 'final/dataset/vcb.csv'
 
-# Store the DataFrame as a CSV file
-df.to_csv(output_file_path, index=False) 
+# Save the DataFrame as a CSV file without the index
+df.to_csv(output_file_path, index=False)

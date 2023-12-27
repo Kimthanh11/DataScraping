@@ -7,6 +7,12 @@ from selenium.webdriver.support.ui import Select
 import time
 import pandas as pd
 from datetime import datetime, timedelta
+from date_range import get_start_year, get_end_year, get_month, start_day, end_day
+
+start_year = get_start_year()
+end_year = get_end_year()
+start_month = get_month(start_day)
+end_month = get_month(end_day)
 
 # Configure the Chrome driver
 options = webdriver.ChromeOptions()
@@ -20,11 +26,19 @@ driver.get(url)
 # Select month and year for the filter
 select_month_element = driver.find_element(By.NAME, "from")
 select_month = Select(select_month_element)
-select_month.select_by_value('12')  # December
+select_month.select_by_value(start_month)
 
 select_year_element = driver.find_element(By.NAME, "fromYear")
 select_year = Select(select_year_element)
-select_year.select_by_value('2022')  # 2022
+select_year.select_by_value(start_year) 
+
+select_to_month_element = driver.find_element(By.NAME, "to")
+select_to_month = Select(select_to_month_element)
+select_to_month.select_by_value(end_month)
+
+select_to_year_element = driver.find_element(By.NAME, "toYear")
+select_to_year = Select(select_to_year_element)
+select_to_year.select_by_value(end_year)
 
 # Trigger the filter by clicking the 'Xem' button
 xem_button = driver.find_element(By.XPATH, "//button[contains(text(), 'Xem')]")
@@ -48,8 +62,8 @@ inflation_data = [
 ]
 
 # Define the date range from 26/12/2022 to 25/12/2023
-start_date = datetime.strptime("26/12/2022", "%d/%m/%Y")
-end_date = datetime.strptime("25/12/2023", "%d/%m/%Y")
+start_date = datetime.strptime(start_day, "%d/%m/%Y")
+end_date = datetime.strptime(end_day, "%d/%m/%Y")
 date_range = [start_date + timedelta(days=x) for x in range((end_date - start_date).days + 1)]
 
 # Filter out Saturdays and Sundays from the date range
